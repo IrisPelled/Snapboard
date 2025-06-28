@@ -1044,38 +1044,42 @@ function generateWordCloudHTML(wordCounts) {
         // Pick color
         const color = colors[index % colors.length];
         
-        // Calculate rotation
-        let rotation = 0;
-        if (index > 0) {
-            const spiralIndex = index - 1;
-            const rotationOptions = [0, 0, 0, 0, 15, -15, 30, -30, 45, -45, 90, -90];
-            rotation = rotationOptions[spiralIndex % rotationOptions.length];
-        }
+        // Calculate final position coordinates and rotation
+        let leftPos, topPos, rotation = 0;
         
-        console.log(`Word: ${word}, Size: ${size}px, Index: ${index}, Position: ${index === 0 ? 'center' : 'spiral'}, Rotation: ${rotation}deg`);
-        
-        // Calculate final position coordinates
-        let leftPos, topPos;
         if (index === 0) {
             leftPos = '50%';
             topPos = '50%';
+            rotation = 0;
         } else {
-            // Better spiral positioning algorithm
+            // Better spiral positioning algorithm with more spacing
             const spiralIndex = index - 1;
             const angleStep = 137.5; // Golden angle
-            const radiusStep = 8;
-            const minRadius = 60;
+            const radiusStep = 15; // Increased for more spacing between words
+            const minRadius = 80; // Increased minimum distance from center
             
             const angle = spiralIndex * angleStep;
             const radius = minRadius + spiralIndex * radiusStep;
             
             const radian = (angle * Math.PI) / 180;
-            const x = 50 + (Math.cos(radian) * radius * 0.8 / 400 * 100);
-            const y = 50 + (Math.sin(radian) * radius * 0.6 / 400 * 100);
+            // Increased multipliers for better spread
+            const x = 50 + (Math.cos(radian) * radius * 1.0 / 400 * 100);
+            const y = 50 + (Math.sin(radian) * radius * 0.8 / 400 * 100);
             
-            leftPos = Math.max(10, Math.min(90, x)) + '%';
-            topPos = Math.max(15, Math.min(85, y)) + '%';
+            leftPos = Math.max(8, Math.min(92, x)) + '%';
+            topPos = Math.max(12, Math.min(88, y)) + '%';
+            
+            // More vertical words and varied rotations
+            const rotationOptions = [
+                0, 0, 90, 90, // More horizontal and vertical
+                -90, -90, 0, 90, // Even more vertical emphasis  
+                45, -45, 0, 90, -90, // Mix of angles
+                30, -30, 90, -90, 0
+            ];
+            rotation = rotationOptions[spiralIndex % rotationOptions.length];
         }
+        
+        console.log(`Word: ${word}, Size: ${size}px, Index: ${index}, Position: ${index === 0 ? 'center' : 'spiral'}, Rotation: ${rotation}deg`);
         
         return `<span class="word-cloud-word" style="
             position: absolute;
