@@ -1029,6 +1029,66 @@ function generateWordCloudHTML(wordCounts) {
         '#fd79a8', '#fdcb6e', '#6c5ce7', '#a29bfe', '#fd63ff'
     ];
     
+    // Track placed words to avoid overlaps
+    const placedWords = [];
+    
+    // Function to check if two words overlap
+    function checkOverlap(word1, word2, margin = 20) {
+        const dx = Math.abs(word1.x - word2.x);
+        const dy = Math.abs(word1.y - word2.y);
+        
+        // Estimate word dimensions (rough calculation)
+        const w1Width = word1.size * word1.text.length * 0.6;
+        const w1Height = word1.size * 1.2;
+        const w2Width = word2.size * word2.text.length * 0.6;
+        const w2Height = word2.size * 1.2;
+        
+        // Check if words are too close (with margin)
+        return dx < (w1Width + w2Width) / 2 + margin && 
+               dy < (w1Height + w2Height) / 2 + margin;
+    }
+    
+    // Function to find non-overlapping position
+    function findNonOverlappingPosition(word, attempts = 50) {
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            const spiralIndex = attempt;
+            const angleStep = 137.5; // Golden angle
+            const radiusStep = 25; // More spacing
+            const minRadius = 100 + (spiralIndex * 5); // Progressive increase
+            
+            const angle = spiralIndex * angleStep + (attempt * 30); // Add variation
+            const radius = minRadius + spiralIndex * radiusStep;
+            
+            const radian = (angle * Math.PI) / 180;
+            const x = 50 + (Math.cos(radian) * radius * 1.2 / 400 * 100);
+            const y = 50 + (Math.sin(radian) * radius * 1.0 / 400 * 100);
+            
+            // Keep within bounds
+            if (x < 10 || x > 90 || y < 15 || y > 85) continue;
+            
+            // Check for overlaps with existing words
+            const testWord = { ...word, x, y };
+            let hasOverlap = false;
+            
+            for (const placed of placedWords) {
+                if (checkOverlap(testWord, placed)) {
+                    hasOverlap = true;
+                    break;
+                }
+            }
+            
+            if (!hasOverlap) {
+                return { x, y };
+            }
+        }
+        
+        // If no position found, return a fallback position
+        return { 
+            x: 20 + Math.random() * 60, 
+            y: 20 + Math.random() * 60 
+        };
+    }
+    
     // Create positioned word cloud elements
     const cloudHTML = wordCounts.map(([word, count], index) => {
         // Calculate size with more dramatic differences
@@ -1037,54 +1097,51 @@ function generateWordCloudHTML(wordCounts) {
             size = 32;
         } else {
             const sizeRatio = (count - minCount) / (maxCount - minCount);
-            // Size range: 20px to 80px for more dramatic effect
-            size = Math.round(20 + Math.pow(sizeRatio, 0.6) * 60);
+            // Size range: 22px to 75px for better spacing
+            size = Math.round(22 + Math.pow(sizeRatio, 0.6) * 53);
         }
         
         // Pick color
         const color = colors[index % colors.length];
         
-        // Calculate final position coordinates and rotation
-        let leftPos, topPos, rotation = 0;
-        
-        if (index === 0) {
-            leftPos = '50%';
-            topPos = '50%';
-            rotation = 0;
-        } else {
-            // Better spiral positioning algorithm with more spacing
-            const spiralIndex = index - 1;
-            const angleStep = 137.5; // Golden angle
-            const radiusStep = 15; // Increased for more spacing between words
-            const minRadius = 80; // Increased minimum distance from center
-            
-            const angle = spiralIndex * angleStep;
-            const radius = minRadius + spiralIndex * radiusStep;
-            
-            const radian = (angle * Math.PI) / 180;
-            // Increased multipliers for better spread
-            const x = 50 + (Math.cos(radian) * radius * 1.0 / 400 * 100);
-            const y = 50 + (Math.sin(radian) * radius * 0.8 / 400 * 100);
-            
-            leftPos = Math.max(8, Math.min(92, x)) + '%';
-            topPos = Math.max(12, Math.min(88, y)) + '%';
-            
-            // More vertical words and varied rotations
-            const rotationOptions = [
-                0, 0, 90, 90, // More horizontal and vertical
-                -90, -90, 0, 90, // Even more vertical emphasis  
-                45, -45, 0, 90, -90, // Mix of angles
-                30, -30, 90, -90, 0
-            ];
-            rotation = rotationOptions[spiralIndex % rotationOptions.length];
+        // ONLY clear rotations: horizontal (0°) or vertical (90°, -90°)
+        let rotation = 0;
+        if (index > 0) {
+            // Simple rotation pattern: mostly horizontal, some vertical
+            const rotationOptions = [0, 0, 0, 90, 0, 0, -90, 0, 0, 90];
+            rotation = rotationOptions[index % rotationOptions.length];
         }
         
-        console.log(`Word: ${word}, Size: ${size}px, Index: ${index}, Position: ${index === 0 ? 'center' : 'spiral'}, Rotation: ${rotation}deg`);
+        // Calculate position
+        let leftPos, topPos;
+        
+        if (index === 0) {
+            // First word always in center
+            leftPos = 50;
+            topPos = 50;
+        } else {
+            // Find position that doesn't overlap
+            const wordData = { text: word, size, rotation };
+            const position = findNonOverlappingPosition(wordData);
+            leftPos = position.x;
+            topPos = position.y;
+        }
+        
+        // Add to placed words for overlap checking
+        placedWords.push({
+            text: word,
+            x: leftPos,
+            y: topPos,
+            size: size,
+            rotation: rotation
+        });
+        
+        console.log(`✅ Word: ${word}, Size: ${size}px, Position: (${leftPos.toFixed(1)}%, ${topPos.toFixed(1)}%), Rotation: ${rotation}deg`);
         
         return `<span class="word-cloud-word" style="
             position: absolute;
-            left: ${leftPos};
-            top: ${topPos};
+            left: ${leftPos}%;
+            top: ${topPos}%;
             font-size: ${size}px;
             color: ${color};
             font-weight: ${size > 50 ? 'bold' : size > 35 ? '600' : size > 25 ? '500' : 'normal'};
