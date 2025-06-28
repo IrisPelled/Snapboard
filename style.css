@@ -421,6 +421,18 @@ nav {
     gap: 15px;
 }
 
+.board-logo {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.board-logo .form-logo {
+    height: 70px;
+    width: auto;
+    opacity: 0.9;
+}
+
 .board-info {
     display: flex;
     gap: 20px;
@@ -708,7 +720,7 @@ nav {
 }
 
 .word-cloud-container {
-    min-height: 450px;
+    min-height: 500px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -821,6 +833,10 @@ footer {
         gap: 10px;
     }
     
+    .board-logo .form-logo {
+        height: 60px;
+    }
+    
     .board-info {
         justify-content: center;
         flex-direction: column;
@@ -916,6 +932,10 @@ footer {
     .form-logo {
         height: 100px;
         margin: -12px 0;
+    }
+    
+    .board-logo .form-logo {
+        height: 50px;
     }
     
     .form-header {

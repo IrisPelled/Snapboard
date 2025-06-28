@@ -1033,38 +1033,45 @@ function generateWordCloudHTML(wordCounts) {
     const placedWords = [];
     
     // Function to check if two words overlap
-    function checkOverlap(word1, word2, margin = 20) {
+    function checkOverlap(word1, word2, margin = 15) {
         const dx = Math.abs(word1.x - word2.x);
         const dy = Math.abs(word1.y - word2.y);
         
-        // Estimate word dimensions (rough calculation)
-        const w1Width = word1.size * word1.text.length * 0.6;
-        const w1Height = word1.size * 1.2;
-        const w2Width = word2.size * word2.text.length * 0.6;
-        const w2Height = word2.size * 1.2;
+        // Better word dimension calculation
+        const w1Width = word1.rotation === 90 || word1.rotation === -90 ? 
+                        word1.size * 1.2 : word1.size * word1.text.length * 0.7;
+        const w1Height = word1.rotation === 90 || word1.rotation === -90 ? 
+                         word1.size * word1.text.length * 0.7 : word1.size * 1.2;
+        
+        const w2Width = word2.rotation === 90 || word2.rotation === -90 ? 
+                        word2.size * 1.2 : word2.size * word2.text.length * 0.7;
+        const w2Height = word2.rotation === 90 || word2.rotation === -90 ? 
+                         word2.size * word2.text.length * 0.7 : word2.size * 1.2;
         
         // Check if words are too close (with margin)
         return dx < (w1Width + w2Width) / 2 + margin && 
                dy < (w1Height + w2Height) / 2 + margin;
     }
     
-    // Function to find non-overlapping position
-    function findNonOverlappingPosition(word, attempts = 50) {
+    // Function to find non-overlapping position around center
+    function findNonOverlappingPosition(word, wordIndex, attempts = 100) {
+        // Start close to center and spiral outward
+        const baseRadius = 60; // Start closer to center
+        const radiusIncrement = 12; // Smaller increments for tighter spiral
+        
         for (let attempt = 0; attempt < attempts; attempt++) {
-            const spiralIndex = attempt;
-            const angleStep = 137.5; // Golden angle
-            const radiusStep = 25; // More spacing
-            const minRadius = 100 + (spiralIndex * 5); // Progressive increase
-            
-            const angle = spiralIndex * angleStep + (attempt * 30); // Add variation
-            const radius = minRadius + spiralIndex * radiusStep;
+            // Calculate spiral position
+            const angle = attempt * 25 + (wordIndex * 15); // More controlled angle distribution
+            const radius = baseRadius + (attempt * radiusIncrement);
             
             const radian = (angle * Math.PI) / 180;
-            const x = 50 + (Math.cos(radian) * radius * 1.2 / 400 * 100);
-            const y = 50 + (Math.sin(radian) * radius * 1.0 / 400 * 100);
+            const x = 50 + (Math.cos(radian) * radius / 5); // Divide by 5 for percentage conversion
+            const y = 50 + (Math.sin(radian) * radius / 5);
             
-            // Keep within bounds
-            if (x < 10 || x > 90 || y < 15 || y > 85) continue;
+            // Keep within reasonable bounds
+            if (x < 15 || x > 85 || y < 15 || y > 85) {
+                continue; // Try next position
+            }
             
             // Check for overlaps with existing words
             const testWord = { ...word, x, y };
@@ -1082,10 +1089,36 @@ function generateWordCloudHTML(wordCounts) {
             }
         }
         
-        // If no position found, return a fallback position
+        // Fallback: find position farther out if needed
+        for (let fallback = 0; fallback < 50; fallback++) {
+            const angle = Math.random() * 360;
+            const radius = 80 + (fallback * 8);
+            
+            const radian = (angle * Math.PI) / 180;
+            const x = 50 + (Math.cos(radian) * radius / 6);
+            const y = 50 + (Math.sin(radian) * radius / 6);
+            
+            if (x >= 10 && x <= 90 && y >= 10 && y <= 90) {
+                const testWord = { ...word, x, y };
+                let hasOverlap = false;
+                
+                for (const placed of placedWords) {
+                    if (checkOverlap(testWord, placed)) {
+                        hasOverlap = true;
+                        break;
+                    }
+                }
+                
+                if (!hasOverlap) {
+                    return { x, y };
+                }
+            }
+        }
+        
+        // Last resort: random position
         return { 
-            x: 20 + Math.random() * 60, 
-            y: 20 + Math.random() * 60 
+            x: 25 + Math.random() * 50, 
+            y: 25 + Math.random() * 50 
         };
     }
     
@@ -1116,27 +1149,43 @@ function generateWordCloudHTML(wordCounts) {
         let leftPos, topPos;
         
         if (index === 0) {
-            // First word always in center
+            // First word always in center with protection zone
             leftPos = 50;
             topPos = 50;
+            
+            // Add center word with larger protection zone
+            placedWords.push({
+                text: word,
+                x: leftPos,
+                y: topPos,
+                size: size * 1.3, // Larger protection zone for center word
+                rotation: rotation,
+                isCenter: true
+            });
         } else {
             // Find position that doesn't overlap
             const wordData = { text: word, size, rotation };
-            const position = findNonOverlappingPosition(wordData);
+            const position = findNonOverlappingPosition(wordData, index);
             leftPos = position.x;
             topPos = position.y;
+            
+            // Add to placed words for overlap checking
+            placedWords.push({
+                text: word,
+                x: leftPos,
+                y: topPos,
+                size: size,
+                rotation: rotation,
+                isCenter: false
+            });
         }
         
-        // Add to placed words for overlap checking
-        placedWords.push({
-            text: word,
-            x: leftPos,
-            y: topPos,
-            size: size,
-            rotation: rotation
-        });
-        
         console.log(`✅ Word: ${word}, Size: ${size}px, Position: (${leftPos.toFixed(1)}%, ${topPos.toFixed(1)}%), Rotation: ${rotation}deg`);
+        
+        // Debug: show current words count
+        if (index % 5 === 0) {
+            console.log(`📊 Placed ${placedWords.length} words so far`);
+        }
         
         return `<span class="word-cloud-word" style="
             position: absolute;
@@ -1164,7 +1213,7 @@ function generateWordCloudHTML(wordCounts) {
         <div class="pure-word-cloud" style="
             position: relative;
             width: 100%;
-            height: 450px;
+            height: 500px;
             margin: 0;
             padding: 0;
             background: transparent;
