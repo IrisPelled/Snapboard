@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#d5a400">
+    <title>SnapBoard - לוח חכם לכיתה</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="hero">
+            <h1><i class="fas fa-chalkboard-teacher"></i> SnapBoard</h1>
+        </header>
+
+        <main class="main-content">
+            <!-- Teacher Form -->
+            <div class="form-container">
+                <div class="form-header">
+                    <h2>צור לוח חדש</h2>
+                    <img src="logo.svg" alt="SnapBoard Logo" class="form-logo">
+                </div>
+                <form id="boardForm" onsubmit="createBoard(event)">
+                    <div class="form-group">
+                        <label for="teacherName">שם המנחה:</label>
+                        <input type="text" id="teacherName" required placeholder="הזן את שמך">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="question">השאלה לקהל:</label>
+                        <textarea id="question" required placeholder="מה השאלה שאתה רוצה לשאול?"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>הוסף תמונה (אופציונלי):</label>
+                        <div class="image-upload-options">
+                            <label class="upload-btn">
+                                <i class="fas fa-upload"></i>
+                                העלה תמונה
+                                <input type="file" id="imageFile" accept="image/*" onchange="handleImageUpload(event)" style="display: none;">
+                            </label>
+                        </div>
+                        <div id="imagePreview" class="image-preview"></div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="allowAnonymous" checked>
+                            אפשר תשובות אנונימיות
+                        </label>
+                    </div>
+                    
+                    <div class="form-submit">
+                        <button type="submit" class="btn-primary large">
+                            <i class="fas fa-plus"></i>
+                            צור לוח חדש
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Student Join Form -->
+            <div id="student-join" class="student-join-form" style="display: none;">
+                <div class="form-container">
+                    <h3>הצטרפות ללוח</h3>
+                    <form onsubmit="joinBoard(event)">
+                        <div class="form-group">
+                            <label for="accessCode">קוד גישה:</label>
+                            <input type="text" id="accessCode" required placeholder="הזן קוד גישה">
+                        </div>
+                        <div class="form-group">
+                            <label for="studentName">השם שלך:</label>
+                            <input type="text" id="studentName" required placeholder="הזן את שמך">
+                        </div>
+                        <div class="form-group">
+                            <label for="studentEmail">מייל (לזיהוי בלבד):</label>
+                            <input type="email" id="studentEmail" required placeholder="הזן מייל">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">הצטרף</button>
+                            <button type="button" class="btn-secondary" onclick="hideStudentJoin()">ביטול</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Board Created Success -->
+            <div id="board-created" class="board-created" style="display: none;">
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <h2>הלוח נוצר בהצלחה!</h2>
+                </div>
+                
+                <div class="access-info">
+                    <div class="access-code">
+                        <h3>קוד גישה לתלמידים:</h3>
+                        <div class="code-display">
+                            <span id="displayCode"></span>
+                            <button class="copy-btn" onclick="copyCode()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="board-link">
+                        <h3>קישור ישיר ללוח:</h3>
+                        <div class="link-display">
+                            <span id="displayLink"></span>
+                            <button class="copy-btn" onclick="copyLink()">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="link-instruction">שתף קישור זה עם התלמידים</p>
+                    </div>
+                </div>
+                
+                <div class="next-actions">
+                    <button class="btn-primary" onclick="goToBoard()">
+                        <i class="fas fa-arrow-left"></i>
+                        עבור ללוח
+                    </button>
+                    <button class="btn-secondary" onclick="createAnother()">
+                        <i class="fas fa-plus"></i>
+                        צור לוח נוסף
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p class="footer-text">כאן יוצרים חיבור אמיתי בכל מפגש</p>
+        </footer>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
