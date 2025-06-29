@@ -207,12 +207,12 @@ nav {
 }
 
 .form-logo {
-    height: 240px;
+    height: 180px;
     width: auto;
     opacity: 0.9;
     transition: opacity 0.3s ease;
-    margin: -20px 0;
-    vertical-align: middle;
+    margin: -60px 0 -20px 0;
+    vertical-align: top;
 }
 
 .form-logo:hover {
@@ -221,7 +221,8 @@ nav {
 
 .form-submit {
     text-align: left;
-    margin-top: 25px;
+    margin-top: 25
+    px;
 }
 
 .form-group {
@@ -428,7 +429,7 @@ nav {
 }
 
 .board-logo .form-logo {
-    height: 210px;
+    height: 160px;
     width: auto;
     opacity: 0.9;
 }
@@ -792,7 +793,7 @@ footer {
     }
     
     .form-logo {
-        height: 200px;
+        height: 150px;
     }
     
     .form-submit {
@@ -833,7 +834,7 @@ footer {
     }
     
     .board-logo .form-logo {
-        height: 180px;
+        height: 140px;
     }
     
     .board-info {
@@ -929,12 +930,12 @@ footer {
     }
     
     .form-logo {
-        height: 180px;
+        height: 140px;
         margin: -12px 0;
     }
     
     .board-logo .form-logo {
-        height: 150px;
+        height: 120px;
     }
     
     .form-header {
