@@ -1049,8 +1049,8 @@ function generateWordCloudHTML(wordCounts) {
         return { width: textWidth, height: textHeight };
     }
     
-    // Function to check if two words overlap - ZERO TOLERANCE
-    function checkOverlap(word1, word2, safetyMargin = 15) {
+    // Function to check if two words overlap with tight spacing
+    function checkOverlap(word1, word2, safetyMargin = 5) {
         const dim1 = getWordDimensions(word1.text, word1.size, word1.rotation);
         const dim2 = getWordDimensions(word2.text, word2.size, word2.rotation);
         
@@ -1061,7 +1061,7 @@ function generateWordCloudHTML(wordCounts) {
         const x2 = (word2.x / 100) * containerSize;
         const y2 = (word2.y / 100) * containerSize;
         
-        // Calculate boundaries with safety margin
+        // Calculate boundaries with minimal safety margin for tight packing
         const left1 = x1 - dim1.width / 2 - safetyMargin;
         const right1 = x1 + dim1.width / 2 + safetyMargin;
         const top1 = y1 - dim1.height / 2 - safetyMargin;
@@ -1072,40 +1072,37 @@ function generateWordCloudHTML(wordCounts) {
         const top2 = y2 - dim2.height / 2 - safetyMargin;
         const bottom2 = y2 + dim2.height / 2 + safetyMargin;
         
-        // Check for NO overlap (return true if overlap exists)
+        // Check for overlap (return true if overlap exists)
         return !(right1 < left2 || left1 > right2 || bottom1 < top2 || top1 > bottom2);
     }
     
-    // Function to find perfect position with ZERO overlaps
+    // Function to find perfect position using tight spiral algorithm
     function findPerfectPosition(word, attempts = 300) {
-        // Start very close to center and spiral outward systematically
-        const maxRadius = 35; // Keep it compact
-        const radiusStep = 3; // Very small steps
-        const angleStep = 15; // Systematic angle steps
+        // Start VERY close to center and create tight spiral
+        const centerX = 50;
+        const centerY = 50;
         
-        for (let radius = 8; radius <= maxRadius; radius += radiusStep) {
-            // Try multiple angles at each radius
-            const anglesAtRadius = Math.max(8, Math.floor(radius * 2)); // More angles for larger radius
+                 // Ultra-tight spiral parameters for connected word cloud
+        let radius = 1; // Start extremely close
+        let angle = 0;
+        const angleIncrement = 0.3; // Very small angle steps for smooth spiral
+        const radiusGrowth = 0.08; // Extremely slow radius growth
+        
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            // Calculate position on spiral
+            const radian = (angle * Math.PI) / 180;
+            const x = centerX + Math.cos(radian) * radius;
+            const y = centerY + Math.sin(radian) * radius;
             
-            for (let i = 0; i < anglesAtRadius; i++) {
-                const angle = (i / anglesAtRadius) * 360;
-                const radian = (angle * Math.PI) / 180;
-                
-                const x = 50 + (Math.cos(radian) * radius / 3.5); // Convert to percentage
-                const y = 50 + (Math.sin(radian) * radius / 3.5);
-                
-                // Keep within bounds with margin
-                if (x < 10 || x > 90 || y < 10 || y > 90) {
-                    continue;
-                }
-                
+            // Keep within reasonable bounds
+            if (x >= 15 && x <= 85 && y >= 15 && y <= 85) {
                 // Create test word
                 const testWord = { ...word, x, y };
                 
-                // Check against ALL placed words
+                // Check for overlaps with ultra-minimal safety margin
                 let hasOverlap = false;
                 for (const placedWord of placedWords) {
-                    if (checkOverlap(testWord, placedWord)) {
+                    if (checkOverlap(testWord, placedWord, 3)) { // Ultra-small safety margin
                         hasOverlap = true;
                         break;
                     }
@@ -1115,20 +1112,29 @@ function generateWordCloudHTML(wordCounts) {
                     return { x, y };
                 }
             }
+            
+            // Move along spiral
+            angle += angleIncrement;
+            radius += radiusGrowth;
+            
+            // If spiral gets too big, restart with different starting angle
+            if (radius > 30) {
+                radius = 3;
+                angle = Math.random() * 360; // Random starting angle
+            }
         }
         
-        // If nothing found in compact area, try organized grid fallback
-        const gridSize = 8;
-        for (let gridX = 1; gridX < gridSize; gridX++) {
-            for (let gridY = 1; gridY < gridSize; gridY++) {
-                const x = (gridX / gridSize) * 80 + 10; // 10-90% range
-                const y = (gridY / gridSize) * 80 + 10;
-                
+        // Fallback: try random positions very close to center
+        for (let attempt = 0; attempt < 50; attempt++) {
+            const x = centerX + (Math.random() - 0.5) * 25; // ±12.5% from center
+            const y = centerY + (Math.random() - 0.5) * 25;
+            
+            if (x >= 15 && x <= 85 && y >= 15 && y <= 85) {
                 const testWord = { ...word, x, y };
                 
                 let hasOverlap = false;
                 for (const placedWord of placedWords) {
-                    if (checkOverlap(testWord, placedWord)) {
+                    if (checkOverlap(testWord, placedWord, 3)) {
                         hasOverlap = true;
                         break;
                     }
@@ -1140,58 +1146,47 @@ function generateWordCloudHTML(wordCounts) {
             }
         }
         
-        // Absolute last resort - find ANY safe spot
-        for (let attempt = 0; attempt < 100; attempt++) {
-            const x = 15 + Math.random() * 70;
-            const y = 15 + Math.random() * 70;
-            
-            const testWord = { ...word, x, y };
-            
-            let hasOverlap = false;
-            for (const placedWord of placedWords) {
-                if (checkOverlap(testWord, placedWord)) {
-                    hasOverlap = true;
-                    break;
-                }
-            }
-            
-            if (!hasOverlap) {
-                return { x, y };
-            }
-        }
-        
-        // If still nothing - place far away to avoid overlap
-        return { x: 20, y: 20 };
+        // Last resort - place very close to center
+        return { 
+            x: centerX + (Math.random() - 0.5) * 15, 
+            y: centerY + (Math.random() - 0.5) * 15 
+        };
     }
     
     // Create positioned word cloud elements with ZERO OVERLAPS GUARANTEED
     const cloudHTML = wordCounts.map(([word, count], index) => {
-        // Calculate size
+        // Calculate size with better distribution
         let size;
         if (maxCount === minCount) {
-            size = 28;
+            size = index === 0 ? 42 : 28; // Center word bigger when all equal
         } else {
             const sizeRatio = (count - minCount) / (maxCount - minCount);
-            // Smaller size range for better fitting: 18px to 55px
-            size = Math.round(18 + Math.pow(sizeRatio, 0.8) * 37);
+            if (index === 0) {
+                // Center word is always prominently large
+                size = Math.round(42 + Math.pow(sizeRatio, 0.7) * 22); // 42-64px
+            } else {
+                // Other words use more graduated scale
+                size = Math.round(16 + Math.pow(sizeRatio, 0.9) * 30); // 16-46px
+            }
         }
         
         // Pick color
         const color = colors[index % colors.length];
         
-        // Minimal rotation for better reading
+        // Minimal rotation for better reading and connection
         let rotation = 0;
-        if (index > 0 && index % 8 === 0) {
-            rotation = Math.random() > 0.5 ? 90 : -90; // Only some words rotated
+        if (index > 0 && index % 12 === 0 && Math.random() > 0.7) {
+            rotation = Math.random() > 0.5 ? 45 : -45; // Smaller rotation angles
         }
         
         // Calculate position
         let leftPos, topPos;
         
         if (index === 0) {
-            // Center word - ALWAYS in exact center
+            // Center word - ALWAYS in exact center with no rotation
             leftPos = 50;
             topPos = 50;
+            rotation = 0; // Center word should never rotate
             
             // Add center word to placed words
             placedWords.push({
@@ -1202,7 +1197,7 @@ function generateWordCloudHTML(wordCounts) {
                 rotation: rotation
             });
         } else {
-            // Find PERFECT position with NO overlaps
+            // Find position in tight spiral around center
             const wordData = { text: word, size, rotation };
             const position = findPerfectPosition(wordData);
             leftPos = position.x;
@@ -1261,6 +1256,45 @@ function generateWordCloudHTML(wordCounts) {
     `;
     
     console.log('✨ Beautiful word cloud generated successfully!');
+    
+    // Add a subtle update indicator
+    if (document.querySelector('.word-cloud-word')) {
+        const indicator = document.createElement('div');
+        indicator.innerHTML = '✨ עודכן';
+        indicator.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(213, 164, 0, 0.9);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            opacity: 0;
+            animation: fadeInOut 2s ease-in-out;
+            pointer-events: none;
+            z-index: 1000;
+        `;
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInOut {
+                0% { opacity: 0; transform: scale(0.8); }
+                20% { opacity: 1; transform: scale(1); }
+                80% { opacity: 1; transform: scale(1); }
+                100% { opacity: 0; transform: scale(0.8); }
+            }
+        `;
+        
+        if (!document.querySelector('#wordCloudAnimations')) {
+            style.id = 'wordCloudAnimations';
+            document.head.appendChild(style);
+        }
+        
+        container.appendChild(indicator);
+        setTimeout(() => indicator.remove(), 2000);
+    }
 }
 
 function downloadWordCloud() {
